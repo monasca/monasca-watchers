@@ -1,0 +1,88 @@
+hash: 8b7321a2ac92c5e276811c6aaa5c65128cb3f67fbf2927a6094d17aaccadb330
+updated: 2017-11-14T10:20:16.793842067-07:00
+imports:
+- name: github.com/beorn7/perks
+  version: 4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9
+  subpackages:
+  - quantile
+- name: github.com/caarlos0/env
+  version: 9de094f90fa8a13dc162e10ae8a3b95c0c2c33e1
+- name: github.com/confluentinc/confluent-kafka-go
+  version: f696f02dcbb04d95b103c5b848bb15f749a996f7
+  subpackages:
+  - kafka
+- name: github.com/craigbr/monasca-watchers
+  version: 2031f5a4acb570035b52eec17706d3fc7cb0e876
+  subpackages:
+  - watcher
+- name: github.com/ghodss/yaml
+  version: 0ca9ea5df5451ffdf184b4428c902747c2c11cd7
+- name: github.com/golang/protobuf
+  version: 4bd1920723d7b7c925de087aa32e2187708897f7
+  subpackages:
+  - proto
+- name: github.com/matttproud/golang_protobuf_extensions
+  version: c12348ce28de40eed0136aa2b644d0ee0650e56c
+  subpackages:
+  - pbutil
+- name: github.com/pkg/errors
+  version: f15c970de5b76fac0b59abb32d62c17cc7bed265
+- name: github.com/prometheus/client_golang
+  version: 5cec1d0429b02e4323e042eb04dafdb079ddf568
+  subpackages:
+  - prometheus
+  - prometheus/promhttp
+- name: github.com/prometheus/client_model
+  version: 6f3806018612930941127f2a7c6c453ba2c527d2
+  subpackages:
+  - go
+- name: github.com/prometheus/common
+  version: e3fb1a1acd7605367a2b378bc2e2f893c05174b7
+  subpackages:
+  - expfmt
+  - internal/bitbucket.org/ww/goautoneg
+  - model
+- name: github.com/prometheus/procfs
+  version: a6e9df898b1336106c743392c48ee0b71f5c4efa
+  subpackages:
+  - xfs
+- name: github.com/rjeczalik/notify
+  version: 767eb674ef14b09119b2fff3601e64558d530c47
+- name: github.com/sirupsen/logrus
+  version: f006c2ac4710855cf0f916dd6b77acf6b048dc6e
+- name: github.com/sohlich/elogrus
+  version: 73eaa9aeeb3be66d60f327d2da22eaf0047b7988
+- name: github.com/spf13/viper
+  version: 4dddf7c62e16bce5807744018f5b753bfe21bbd2
+- name: github.hpe.com/kronos/kelog
+  version: 23d4faa82471cdf8290bb81f88bb983ac4badcf3
+  subpackages:
+  - config
+- name: golang.org/x/crypto
+  version: d172538b2cfce0c13cee31e647d0367aa8cd2486
+  subpackages:
+  - ssh/terminal
+- name: golang.org/x/sys
+  version: 8f0908ab3b2457e2e15403d3697c9ef5cb4b57a9
+  subpackages:
+  - unix
+- name: gopkg.in/olivere/elastic.v5
+  version: 171ce647da4acfb30ffc99981d66d80bdea6bcee
+  subpackages:
+  - config
+  - uritemplates
+- name: gopkg.in/yaml.v2
+  version: eb3733d160e74a9c7e442f435eb3bea458e1d19f
+testImports:
+- name: github.com/davecgh/go-spew
+  version: 04cdfd42973bb9c8589fd6a731800cf222fde1a9
+  subpackages:
+  - spew
+- name: github.com/pmezard/go-difflib
+  version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
+  subpackages:
+  - difflib
+- name: github.com/stretchr/testify
+  version: 2aa2c176b9dab406a6970f6a55f513e8a8c8b18f
+  subpackages:
+  - assert
