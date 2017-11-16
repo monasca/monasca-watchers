@@ -25,9 +25,10 @@ import (
 type Status int
 
 const (
-	OK = iota // OK
-	WARNING
-	ERROR
+	NOT_STARTED = -1
+	OK          = 0
+	WARNING     = 1
+	ERROR       = 2
 )
 
 var statuses = [...]string{
@@ -81,7 +82,8 @@ func CreateWatcher(watchable Watchable, period time.Duration, maxFailures int, t
 	statusMetric := prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Name: prefix + "watcher_status",
-			Help: "Status of watcher, 0 = OK, 1 = WARNING, 2 = ERROR"})
+			Help: "Status of watcher: -1 = NOT_STARTED, 0 = OK, 1 = WARNING, 2 = ERROR"})
+	statusMetric.Set(NOT_STARTED)
 	minRoundTripTimeMetric := prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Name: prefix + "min_round_trip_time",
@@ -115,6 +117,7 @@ func CreateWatcher(watchable Watchable, period time.Duration, maxFailures int, t
 		Period:                 period,
 		stopChannel:            make(chan bool, 10),
 		stoppedChannel:         make(chan bool, 1),
+		Status:                 NOT_STARTED,
 		StatusMetric:           statusMetric,
 		MinRoundTripTimeMetric: minRoundTripTimeMetric,
 		MinRoundTripTime:       time.Duration(1000) * time.Hour,
@@ -137,6 +140,8 @@ func (watcher *Watcher) Start() {
 
 func (watcher *Watcher) watch() {
 	log.Info("watch started")
+	watcher.Status = OK
+	watcher.StatusMetric.Set(OK)
 	var consecutiveReadFailures int
 	var consecutiveWriteFailures int
 	uuid := time.Now().Format(time.RFC3339Nano) // Not a true UUID, but close enough for this

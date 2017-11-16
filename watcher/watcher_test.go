@@ -104,6 +104,7 @@ func TestSimple(t *testing.T) {
 	testBroker := createTestBroker(false, t)
 	watcher := CreateWatcher(testBroker, time.Duration(1)*time.Second, 1, twoHundredMilliseconds,
 		"TestSimple")
+	assert.Equal(t, Status(NOT_STARTED), watcher.Status, "Initial watcher.status")
 	watcher.Start()
 
 	testOneWriteRead(testBroker, watcher)

@@ -17,7 +17,7 @@ import (
 	"fmt"
 	configEnv "github.com/caarlos0/env"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
-	"github.com/craigbr/monasca-watchers/watcher"
+	"github.com/monasca/monasca-watchers/watcher"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.hpe.com/kronos/kelog"
 	"net/http"
@@ -29,7 +29,7 @@ import (
 )
 
 type watcherConfiguration struct {
-	HealthCheckTopic   string `env:"HEALTH_CHECK_TOPIC" envDefault:"KafkaHealthCheck"`
+	HealthCheckTopic   string `env:"HEALTH_CHECK_TOPIC" envDefault:"kafka-health-check"`
 	BootstrapServers   string `env:"BOOT_STRAP_SERVERS" envDefault:"localhost"`
 	GroupID            string `env:"GROUP_ID" envDefault:"kafka_watcher"`
 	PrometheusEndpoint string `env:"PROMETHEUS_ENDPOINT" envDefault:"0.0.0.0:8080"`
@@ -105,23 +105,56 @@ func main() {
 	prometheusEndpoint := configuration.PrometheusEndpoint
 
 	log.Infof("Using Kafka topic %s with bootstrapServer %s", healthCheckTopic, bootstrapServers)
-	consumer := initConsumer(healthCheckTopic, groupID, bootstrapServers)
 
-	producer := initProducer(bootstrapServers)
+	kafkaBroker := KafkaBroker{Topic: healthCheckTopic}
+	period := time.Duration(configuration.Period) * time.Second
+	timeout := time.Duration(configuration.Timeout) * time.Second
+
+	// Create the watcher now so it has NOT_STARTED status while we are initializing
+	// the connections to Kafka
+	watcher := watcher.CreateWatcher(&kafkaBroker, period, 1, timeout, "kafka")
+
+	go func() {
+		// Start prometheus endpoint
+		http.Handle("/metrics", promhttp.Handler())
+		log.Fatal(http.ListenAndServe(prometheusEndpoint, nil))
+	}()
+
+	var consumer *kafka.Consumer
+	for consumer == nil {
+		consumer, err = initConsumer(groupID, bootstrapServers)
+		if err != nil {
+			log.Infof("Connecting to Kafka as Consumer failed: %s", err)
+			time.Sleep(time.Duration(10) * time.Second)
+		}
+	}
+
+	kafkaBroker.Consumer = consumer
+
+	for true {
+		err = subscribeToTopic(consumer, healthCheckTopic, groupID)
+		if err == nil {
+			break
+		}
+		log.Infof("Subscribing to Kafka topic %s failed: %s", healthCheckTopic, err)
+		time.Sleep(time.Duration(10) * time.Second)
+	}
+
+	var producer *kafka.Producer
+	for producer == nil {
+		producer, err = initProducer(bootstrapServers)
+		if err != nil {
+			log.Infof("Connecting to Kafka as Producer failed: %s", err)
+			time.Sleep(time.Duration(10) * time.Second)
+		}
+	}
+	kafkaBroker.Producer = producer
 
 	go handleProducerEvents(producer)
 
 	// Give the consumer time to get partitions assigned
 	time.Sleep(time.Duration(30) * time.Second)
-	
-	kafkaBroker := KafkaBroker{
-		Topic:    healthCheckTopic,
-		Consumer: consumer,
-		Producer: producer,
-	}
-	period := time.Duration(configuration.Period) * time.Second
-	timeout := time.Duration(configuration.Timeout) * time.Second
-	watcher := watcher.CreateWatcher(&kafkaBroker, period, 1, timeout, "kafka")
+
 	watcher.Start()
 
 	log.Info("Started kafka-watcher")
@@ -140,16 +173,11 @@ func main() {
 		log.Fatalf("Caught signal %v: terminating", sig)
 	}()
 
-	go func() {
-		// Start prometheus endpoint
-		http.Handle("/metrics", promhttp.Handler())
-		log.Fatal(http.ListenAndServe(prometheusEndpoint, nil))
-	}()
 	log.Infof("Serving metrics on %s/metrics", prometheusEndpoint)
 	wg.Wait()
 }
 
-func initConsumer(consumerTopic, groupID, bootstrapServers string) *kafka.Consumer {
+func initConsumer(groupID, bootstrapServers string) (*kafka.Consumer, error) {
 	c, err := kafka.NewConsumer(&kafka.ConfigMap{
 		"bootstrap.servers":               bootstrapServers,
 		"group.id":                        groupID,
@@ -161,31 +189,34 @@ func initConsumer(consumerTopic, groupID, bootstrapServers string) *kafka.Consum
 	})
 
 	if err != nil {
-		log.Fatalf("Failed to create consumer: %s", err)
+		return nil, err
 	}
 
 	log.Infof("Created kafka consumer %v", c)
+	return c, nil
+}
 
-	err = c.Subscribe(consumerTopic, nil)
+func subscribeToTopic(c *kafka.Consumer, consumerTopic, groupID string) error {
+	err := c.Subscribe(consumerTopic, nil)
 
 	if err != nil {
-		log.Fatalf("Failed to subscribe to topics %c", err)
+		return err
 	}
 	log.Infof("Subscribed to topic %s as group %s", consumerTopic, groupID)
 
-	return c
+	return nil
 }
 
-func initProducer(bootstrapServers string) *kafka.Producer {
+func initProducer(bootstrapServers string) (*kafka.Producer, error) {
 	p, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": bootstrapServers})
 
 	if err != nil {
-		log.Fatalf("Failed to create producer: %s", err)
+		return nil, err
 	}
 
 	log.Infof("Created kafka producer %v", p)
 
-	return p
+	return p, nil
 }
 
 func handleProducerEvents(p *kafka.Producer) {

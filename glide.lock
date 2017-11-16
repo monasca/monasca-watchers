@@ -1,5 +1,5 @@
-hash: 8b7321a2ac92c5e276811c6aaa5c65128cb3f67fbf2927a6094d17aaccadb330
-updated: 2017-11-14T10:20:16.793842067-07:00
+hash: 5b6ad28649a538ff6abbee464eabd8843c31cd7a440641ea8db7c2817d8c9138
+updated: 2017-11-15T15:41:33.751719937-07:00
 imports:
 - name: github.com/beorn7/perks
   version: 4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9
@@ -11,10 +11,6 @@ imports:
   version: f696f02dcbb04d95b103c5b848bb15f749a996f7
   subpackages:
   - kafka
-- name: github.com/craigbr/monasca-watchers
-  version: 2031f5a4acb570035b52eec17706d3fc7cb0e876
-  subpackages:
-  - watcher
 - name: github.com/ghodss/yaml
   version: 0ca9ea5df5451ffdf184b4428c902747c2c11cd7
 - name: github.com/golang/protobuf
