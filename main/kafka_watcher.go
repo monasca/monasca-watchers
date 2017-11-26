@@ -129,6 +129,17 @@ func main() {
 		}
 	}
 
+	// Ensure the topic has been created
+	for true {
+		meta, err := consumer.GetMetadata(&healthCheckTopic, false, 2000)
+		if err == nil {
+			log.Infof("Topic Metadata = %s", meta)
+			break
+		}
+		log.Infof("Getting topic %s Metadata as Consumer failed: %s", healthCheckTopic, err)
+		time.Sleep(time.Duration(10) * time.Second)
+	}
+
 	kafkaBroker.Consumer = consumer
 
 	for true {
