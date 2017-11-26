@@ -17,7 +17,7 @@ package watcher
 import (
 	"encoding/json"
 	"github.com/prometheus/client_golang/prometheus"
-	log "github.hpe.com/kronos/kelog"
+	log "github.com/sirupsen/logrus"
 	"time"
 )
 
