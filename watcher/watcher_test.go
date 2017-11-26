@@ -17,7 +17,7 @@ package watcher
 import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
-	log "github.hpe.com/kronos/kelog"
+	log "github.com/sirupsen/logrus"
 	"testing"
 	"time"
 )

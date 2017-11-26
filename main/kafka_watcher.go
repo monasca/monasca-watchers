@@ -19,7 +19,7 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/monasca/monasca-watchers/watcher"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	log "github.hpe.com/kronos/kelog"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"os"
 	"os/signal"
