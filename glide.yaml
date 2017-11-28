@@ -1,6 +1,5 @@
 package: github.com/monasca/monasca-watchers
 import:
-- package: github.hpe.com/kronos/kelog
 - package: github.com/confluentinc/confluent-kafka-go
   version: ^0.9.4
   subpackages:
