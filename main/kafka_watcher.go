@@ -37,6 +37,10 @@ type watcherConfiguration struct {
 	Timeout            int64  `env:"WATCHER_TIMEOUT" envDefault:"60"`
 }
 
+type MetadataFetcher interface {
+	GetMetadata(topic *string, allTopics bool, timeoutMs int) (*kafka.Metadata, error)
+}
+
 type KafkaBroker struct {
 	Topic    string
 	Consumer *kafka.Consumer
@@ -63,11 +67,11 @@ func (broker *KafkaBroker) ReadMessage(timeout time.Duration) (*[]byte, error) {
 		case ev := <-broker.Consumer.Events():
 			switch e := ev.(type) {
 			case kafka.AssignedPartitions:
-				log.Infof("%% %v", e)
+				log.Infof("%v", e)
 				broker.Consumer.Assign(e.Partitions)
 
 			case kafka.RevokedPartitions:
-				log.Infof("%% %v", e)
+				log.Infof("%v", e)
 				broker.Consumer.Unassign()
 
 			case *kafka.Message:
@@ -129,18 +133,9 @@ func main() {
 		}
 	}
 
-	// Ensure the topic has been created
-	for true {
-		meta, err := consumer.GetMetadata(&healthCheckTopic, false, 2000)
-		if err == nil {
-			log.Infof("Topic Metadata = %s", meta)
-			break
-		}
-		log.Infof("Getting topic %s Metadata as Consumer failed: %s", healthCheckTopic, err)
-		time.Sleep(time.Duration(10) * time.Second)
-	}
-
 	kafkaBroker.Consumer = consumer
+
+	ensureTopicExists(consumer, healthCheckTopic)
 
 	for true {
 		err = subscribeToTopic(consumer, healthCheckTopic, groupID)
@@ -163,7 +158,13 @@ func main() {
 
 	go handleProducerEvents(producer)
 
-	// Give the consumer time to get partitions assigned
+	// We know the topic exists but this ensures the producer is really
+	// connected to Kafka
+	ensureTopicExists(producer, healthCheckTopic)
+
+	waitForPartionsAssignment(consumer)
+
+	// Give it just a little more time to make sure it is ready
 	time.Sleep(time.Duration(30) * time.Second)
 
 	watcher.Start()
@@ -205,6 +206,37 @@ func initConsumer(groupID, bootstrapServers string) (*kafka.Consumer, error) {
 
 	log.Infof("Created kafka consumer %v", c)
 	return c, nil
+}
+
+func ensureTopicExists(h MetadataFetcher, healthCheckTopic string) {
+	// Ensure the topic has been created
+	for true {
+		meta, err := h.GetMetadata(&healthCheckTopic, false, 2000)
+		if err != nil {
+			log.Infof("Getting topic %s Metadata failed: %s", healthCheckTopic, err)
+		} else if meta.Topics[healthCheckTopic].Error.Code() != 0 {
+			log.Infof("Topic %s Metadata not ready: %s",
+				healthCheckTopic, meta.Topics[healthCheckTopic])
+		} else {
+			log.Infof("Topic Metadata = %s", meta)
+			return
+		}
+		time.Sleep(time.Duration(10) * time.Second)
+	}
+}
+
+func waitForPartionsAssignment(consumer *kafka.Consumer) {
+	for e := range consumer.Events() {
+		switch ev := e.(type) {
+		case kafka.AssignedPartitions:
+			log.Infof("Assigned Partitions %v", ev)
+			consumer.Assign(ev.Partitions)
+			return
+
+		case kafka.Error:
+			log.Fatalf("Error: %v", ev)
+		}
+	}
 }
 
 func subscribeToTopic(c *kafka.Consumer, consumerTopic, groupID string) error {
