@@ -1,3 +1,4 @@
+// Copyright 2017 Hewlett Packard Enterprise Development LP
 //
 //    Licensed under the Apache License, Version 2.0 (the "License"); you may
 //    not use this file except in compliance with the License. You may obtain
@@ -150,9 +151,9 @@ func main() {
 
 	var connection *zk.Conn
 	var eventChannel <-chan zk.Event
-	connection, eventChannel, err = connect(zookeeperServers)
+	connection, eventChannel, err = startConnect(zookeeperServers)
 	if err != nil {
-		log.Fatalf("Connecting to Zookeeper failed: %s", err)
+		log.Fatalf("Starting connection to Zookeeper failed: %s", err)
 	}
 
 	for true {
@@ -187,7 +188,11 @@ func main() {
 	wg.Wait()
 }
 
-func connect(zookeeperServers string) (*zk.Conn, <-chan zk.Event, error) {
+// startConnect doesn't actually connect to the zookeeper server, it just
+// starts a thread that tries the connect. As long as the name given resolves,
+// zk.Connect() will not return an error. A StateConnected event will be sent
+// on the returned channel when the servers are actually connected
+func startConnect(zookeeperServers string) (*zk.Conn, <-chan zk.Event, error) {
 	zks := strings.Split(zookeeperServers, ",")
 	conn, eventChannel, err := zk.Connect(zks, time.Duration(10)*time.Second)
 
@@ -195,7 +200,7 @@ func connect(zookeeperServers string) (*zk.Conn, <-chan zk.Event, error) {
 		return nil, nil, err
 	}
 
-	log.Infof("Connected to Zookeeper Servers %s", zookeeperServers)
+	log.Infof("Started connecting to Zookeeper Servers %s", zookeeperServers)
 	return conn, eventChannel, nil
 }
 
