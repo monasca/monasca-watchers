@@ -121,17 +121,14 @@ func main() {
 	}
 
 	healthCheckPath := configuration.HealthCheckPath
-	if len(healthCheckPath) < 0 {
-		log.Fatalf("Invalid HEALTH_CHECK_PATH, must not be empty")
-	}
+	validateConfigurationString("HEALTH_CHECK_PATH", healthCheckPath)
 	if !strings.HasPrefix(healthCheckPath, "/") {
 		healthCheckPath = "/" + healthCheckPath
 	}
 	zookeeperServers := configuration.ZookeeperServers
-	if len(zookeeperServers) < 0 {
-		log.Fatalf("Invalid ZOOKEEPER_SERVERS, must not be empty")
-	}
+	validateConfigurationString("ZOOKEEPER_SERVERS", zookeeperServers)
 	prometheusEndpoint := configuration.PrometheusEndpoint
+	validateConfigurationString("PROMETHEUS_ENDPOINT", prometheusEndpoint)
 
 	log.Infof("Using Zookeeper path %s with ZookeeperServers %s", healthCheckPath, zookeeperServers)
 
@@ -202,6 +199,12 @@ func startConnect(zookeeperServers string) (*zk.Conn, <-chan zk.Event, error) {
 
 	log.Infof("Started connecting to Zookeeper Servers %s", zookeeperServers)
 	return conn, eventChannel, nil
+}
+
+func validateConfigurationString(name, value string) {
+	if len(value) == 0 {
+		log.Fatalf("Invalid %s, must not be empty", name)
+	}
 }
 
 func logEvents(eventChannel <-chan zk.Event) {

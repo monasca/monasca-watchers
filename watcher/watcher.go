@@ -126,15 +126,15 @@ func CreateWatcher(watchable Watchable, period time.Duration, maxFailures int, t
 			Name: prefix + "running_average_round_trip_time",
 			Help: fmt.Sprintf("Running Average Round Trip Time in seconds for last %d messages",
 				RUNNING_AVERAGE_SLOTS)})
-	prometheus.MustRegister(writeFailuresMetric)
-	prometheus.MustRegister(readFailuresMetric)
 	prometheus.MustRegister(statusMetric)
-	prometheus.MustRegister(droppedMessagesMetric)
 	prometheus.MustRegister(minRoundTripTimeMetric)
 	prometheus.MustRegister(maxRoundTripTimeMetric)
+	prometheus.MustRegister(readFailuresMetric)
+	prometheus.MustRegister(writeFailuresMetric)
+	prometheus.MustRegister(droppedMessagesMetric)
+	prometheus.MustRegister(totalRoundTripsMetric)
 	prometheus.MustRegister(averageRoundTripTimeMetric)
 	prometheus.MustRegister(runningAverageRoundTripTimeMetric)
-	prometheus.MustRegister(totalRoundTripsMetric)
 	watcher := Watcher{
 		watchable:                         watchable,
 		MaxFailures:                       maxFailures,

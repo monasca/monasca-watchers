@@ -13,7 +13,7 @@ there have been two consecutive read or write failures, the status goes to ERROR
 ### Kafka Watcher
 
 The Kafka Watcher writes a message to a Kafka topic and then reads it back from the same
-topic. This ensures the entire round trip functionality of Zookeeper is functioning.
+topic. This ensures the entire round trip functionality of Kafka is functioning.
 
 ### Zookeeper Watcher
 
@@ -54,7 +54,7 @@ Several parameters can be specified using environment variables:
 
 ## Metrics
 
-### Zookeeper Watcher
+### Kafka Watcher
 
 | Metric                        | Type      | Description                                       |
 |-------------------------------|-----------|---------------------------------------------------|
@@ -83,7 +83,7 @@ Several parameters can be specified using environment variables:
 
 ## Install (using Docker)
 
-See github.com/monasca/monasca-docker/kafka-watcher and github.com/monasca/monasca-docker/zookeeper-watcher
+See github.com/monasca/monasca-docker/tree/master/kafka-watcher and github.com/monasca/monasca-docker/tree/master/zookeeper-watcher
 
 ## License
 
