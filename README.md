@@ -20,6 +20,11 @@ topic. This ensures the entire round trip functionality of Kafka is functioning.
 The Zookeeper Watcher writes a message to a Zookeeper node and then reads it back from the
 same node. This ensures the entire round trip functionality of Zookeeper is functioning.
 
+### InfluxDB Watcher
+
+The InfluxDB Watcher writes a point to InfluxDB then reads it back. This ensures the entire
+round trip functionality of InfluxDB is functioning.
+
 ## Run Tests
 
    # This is required to skip tests for the vendor directory
@@ -48,6 +53,19 @@ Several parameters can be specified using environment variables:
 |-----------------------|--------------------------|-------------------------------------------|
 | `HEALTH_CHECK_PATH`   | `zookeeper-health-check` | Path to use for health check read/writes  |
 | `ZOOKEEPER_SERVERS`   |`localhost`               | Zookeeper servers                         |
+| `PROMETHEUS_ENDPOINT` | `0.0.0.0:8080`           | Endpoint for Prometheus metrics           |
+| `WATCHER_PERIOD`      |`600`                     | How often to do a read/write cycle        |
+| `WATCHER_TIMEOUT`     |`60`                      | How long to wait for message read         |
+
+### InfluxDB WAtcher
+
+Several parameters can be specified using environment variables:
+
+| Variable              | Default                  | Description                               |
+|-----------------------|--------------------------|-------------------------------------------|
+| `INFLUXDB_ADDRESS`    | `http://localhost:8086`  | Address of the InfluxDB service           |
+| `INFLUXDB_USERNAME`   |`influxdbwatcher`         | InfluxDB username                         |
+| `INFLUXDB_PASSWORD`   |`password`                | InfluxDB password                         |
 | `PROMETHEUS_ENDPOINT` | `0.0.0.0:8080`           | Endpoint for Prometheus metrics           |
 | `WATCHER_PERIOD`      |`600`                     | How often to do a read/write cycle        |
 | `WATCHER_TIMEOUT`     |`60`                      | How long to wait for message read         |
@@ -81,9 +99,23 @@ Several parameters can be specified using environment variables:
 | `zookeeper_watcher_status`        | `gauge`   | Status of watcher: -1 = NOT_STARTED, 0 = OK, 1 = WARNING, 2 = ERROR |
 | `zookeeper_write_failure_count`   | `counter` | Number of failures writing messages               |
 
+### InfluxDB Watcher
+
+| Metric                            | Type      | Description                                       |
+|-----------------------------------|-----------|---------------------------------------------------|
+| `influxdb_average_round_trip_time` | `gauge` | Average Round Trip Time in seconds |
+| `influxdb_dropped_message_count` | `counter` | Number of messages that were dropped              |
+| `influxdb_max_round_trip_time`   | `gauge`   | Maximum Round Trip Time in seconds                |
+| `influxdb_min_round_trip_time`   | `gauge`   | Minimum Round Trip Time in seconds                |
+| `influxdb_read_failure_count`    | `counter` | Number of failures reading messages               |
+| `influxdb_running_average_round_trip_time` | `gauge` | Running Average Round Trip Time in seconds for last 5 messages |
+| `influxdb_watcher_status`        | `gauge`   | Status of watcher: -1 = NOT_STARTED, 0 = OK, 1 = WARNING, 2 = ERROR |
+| `influxdb_write_failure_count`   | `counter` | Number of failures writing messages               |
+
 ## Install (using Docker)
 
-See github.com/monasca/monasca-docker/tree/master/kafka-watcher and github.com/monasca/monasca-docker/tree/master/zookeeper-watcher
+See github.com/monasca/monasca-docker/tree/master/kafka-watcher and github.com/monasca/monasca-docker/tree/master/zookeeper-watcher and
+github.com/monasca/monasca-docker/tree/master/influxdb-watcher
 
 ## License
 
