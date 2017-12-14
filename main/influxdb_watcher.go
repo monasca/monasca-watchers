@@ -191,14 +191,17 @@ func main() {
 }
 
 func startConnect(influxdbAddress string, username string, password string) (client.Client, error) {
-	c, err := client.NewHTTPClient(client.HTTPConfig{
-		Addr:     influxdbAddress,
-		Username: username,
-		Password: password,
-	})
-	if err != nil {
-		return nil, err
-	}
+  var c client.Client
+  for c == nil:
+  	c, err := client.NewHTTPClient(client.HTTPConfig{
+	  	Addr:     influxdbAddress,
+		  Username: username,
+		  Password: password,
+	  })
+  	if err != nil {
+	  	log.Infof("Connecting to InfluxDB failed: %s", err)
+			time.Sleep(time.Duration(10) * time.Second)
+	  }
 	return c, nil
 }
 
