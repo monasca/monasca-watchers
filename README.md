@@ -57,7 +57,7 @@ Several parameters can be specified using environment variables:
 | `WATCHER_PERIOD`      |`600`                     | How often to do a read/write cycle        |
 | `WATCHER_TIMEOUT`     |`60`                      | How long to wait for message read         |
 
-### InfluxDB WAtcher
+### InfluxDB Watcher
 
 Several parameters can be specified using environment variables:
 

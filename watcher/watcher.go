@@ -17,9 +17,10 @@ package watcher
 import (
 	"encoding/json"
 	"fmt"
+	"time"
+
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
-	"time"
 )
 
 // Status of the Watchable
@@ -304,4 +305,11 @@ func (watcher *Watcher) Stop() bool {
 	watcher.stopNow = true
 	watcher.stopChannel <- true
 	return waitForBool(watcher.stoppedChannel, time.Second)
+}
+
+// ValidateConfString check for empty string
+func ValidateConfString(name, value string) {
+	if len(value) == 0 {
+		log.Fatalf("Invalid %s, must not be empty", name)
+	}
 }

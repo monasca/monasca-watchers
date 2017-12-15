@@ -100,6 +100,7 @@ func (broker *InfluxdbBroker) ReadMessage(timeout time.Duration) (*[]byte, error
 	if err != nil {
 		return nil, err
 	}
+
 	message := Message{
 		UUID:     res[0].Series[0].Values[0][2].(string),
 		SentTime: res[0].Series[0].Values[0][1].(string),
@@ -117,15 +118,14 @@ func queryDB(broker *InfluxdbBroker, cmd string) (res []client.Result, err error
 		Command:  cmd,
 		Database: broker.MonascaDB,
 	}
-	if response, err := broker.Connection.Query(q); err == nil {
-		if response.Error() != nil {
-			return res, response.Error()
-		}
-		res = response.Results
-	} else {
-		return res, err
+	response, err := broker.Connection.Query(q)
+	if err != nil {
+		return nil, err
 	}
-	return res, nil
+	if response.Error() != nil {
+		return nil, response.Error()
+	}
+	return response.Results, nil
 }
 
 func main() {
@@ -136,13 +136,13 @@ func main() {
 	}
 
 	influxdbAddress := configuration.InfluxdbAddress
-	validateConfigurationString("INFLUXDB_ADDRESS", influxdbAddress)
+	watcher.ValidateConfString("INFLUXDB_ADDRESS", influxdbAddress)
 	username := configuration.Username
-	validateConfigurationString("INFLUXDB_USERNAME", username)
+	watcher.ValidateConfString("INFLUXDB_USERNAME", username)
 	password := configuration.Password
-	validateConfigurationString("INFLUXDB_PASSWORD", password)
+	watcher.ValidateConfString("INFLUXDB_PASSWORD", password)
 	prometheusEndpoint := configuration.PrometheusEndpoint
-	validateConfigurationString("PROMETHEUS_ENDPOINT", prometheusEndpoint)
+	watcher.ValidateConfString("PROMETHEUS_ENDPOINT", prometheusEndpoint)
 
 	log.Infof("Using InfluxDB Address %s", influxdbAddress)
 
@@ -150,13 +150,9 @@ func main() {
 	period := time.Duration(configuration.Period) * time.Second
 	timeout := time.Duration(configuration.Timeout) * time.Second
 
-	log.Infof(period.String())
-
 	// Create the watcher now so it has NOT_STARTED status while we are initializing
 	// the connections to InfluxDB
 	watcher := watcher.CreateWatcher(&influxdbBroker, period, 1, timeout, "influxdb")
-
-	log.Infof(watcher.Period.String())
 
 	go func() {
 		// Start prometheus endpoint
@@ -191,22 +187,18 @@ func main() {
 }
 
 func startConnect(influxdbAddress string, username string, password string) (client.Client, error) {
-  var c client.Client
-  for c == nil:
-  	c, err := client.NewHTTPClient(client.HTTPConfig{
-	  	Addr:     influxdbAddress,
-		  Username: username,
-		  Password: password,
-	  })
-  	if err != nil {
-	  	log.Infof("Connecting to InfluxDB failed: %s", err)
+	var c client.Client
+	var err error
+	for c == nil {
+		c, err = client.NewHTTPClient(client.HTTPConfig{
+			Addr:     influxdbAddress,
+			Username: username,
+			Password: password,
+		})
+		if err != nil {
+			log.Infof("Connecting to InfluxDB failed: %s", err)
 			time.Sleep(time.Duration(10) * time.Second)
-	  }
-	return c, nil
-}
-
-func validateConfigurationString(name, value string) {
-	if len(value) == 0 {
-		log.Fatalf("Invalid %s, must not be empty", name)
+		}
 	}
+	return c, nil
 }
