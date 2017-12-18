@@ -33,7 +33,7 @@ import (
 
 type watcherConfiguration struct {
 	InfluxdbAddress    string `env:"INFLUXDB_ADDRESS" envDefault:"http://localhost:8086"`
-	Username           string `env:"INFLUXDB_USERNAME" envDefault:"influxdbwatcher"`
+	Username           string `env:"INFLUXDB_USERNAME" envDefault:"influxdb_watcher"`
 	Password           string `env:"INFLUXDB_PASSWORD" envDefault:"password"`
 	PrometheusEndpoint string `env:"PROMETHEUS_ENDPOINT" envDefault:"0.0.0.0:8080"`
 	Period             int64  `env:"WATCHER_PERIOD" envDefault:"600"`
@@ -83,6 +83,7 @@ func (broker *InfluxdbBroker) WriteMessage(byteMessage []byte) error {
 		log.Fatal(err)
 		return err
 	}
+
 	bp.AddPoint(pt)
 
 	// Write the batch
