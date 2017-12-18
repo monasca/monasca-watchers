@@ -32,7 +32,7 @@ import (
 )
 
 type watcherConfiguration struct {
-	InfluxdbAddress    string `env:"INFLUXDB_ADDRESS" envDefault:"http://localhost:8086"`
+	InfluxdbAddress    string `env:"INFLUXDB_ADDRESS" envDefault:"http://influxdb:8086"`
 	Username           string `env:"INFLUXDB_USERNAME" envDefault:"influxdb_watcher"`
 	Password           string `env:"INFLUXDB_PASSWORD" envDefault:"password"`
 	PrometheusEndpoint string `env:"PROMETHEUS_ENDPOINT" envDefault:"0.0.0.0:8080"`
