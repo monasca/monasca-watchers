@@ -205,6 +205,7 @@ func (watcher *Watcher) watch() {
 				watcher.Status = WARNING
 			}
 			watcher.WriteFailures++
+			watcher.WriteFailuresMetric.Inc()
 			consecutiveWriteFailures++
 		}
 		watcher.StatusMetric.Set(float64(watcher.Status))
