@@ -15,8 +15,6 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -32,7 +30,7 @@ import (
 )
 
 type watcherConfiguration struct {
-	InfluxdbAddress    string `env:"INFLUXDB_ADDRESS" envDefault:"http://influxdb:8086"`
+	InfluxdbAddress    string `env:"INFLUXDB_ADDRESS" envDefault:"http://localhost:8086"`
 	Username           string `env:"INFLUXDB_USERNAME" envDefault:"influxdb_watcher"`
 	Password           string `env:"INFLUXDB_PASSWORD" envDefault:"password"`
 	PrometheusEndpoint string `env:"PROMETHEUS_ENDPOINT" envDefault:"0.0.0.0:8080"`
@@ -46,21 +44,8 @@ type InfluxdbBroker struct {
 	Connection client.Client
 }
 
-// Message the values Watcher is expecting to send and receive
-type Message struct {
-	UUID     string
-	SentTime string
-}
-
 // WriteMessage Write a point to Influxdb with UUID and SentTime
 func (broker *InfluxdbBroker) WriteMessage(byteMessage []byte) error {
-	var message Message
-	err := json.Unmarshal(byteMessage, &message)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-
 	// Create a new point batch
 	bp, err := client.NewBatchPoints(client.BatchPointsConfig{
 		Database:  broker.MonascaDB,
@@ -74,13 +59,12 @@ func (broker *InfluxdbBroker) WriteMessage(byteMessage []byte) error {
 	// Create a point and add to batch
 	tags := map[string]string{"watcher": "influxdb"}
 	fields := map[string]interface{}{
-		"uuid":      message.UUID,
-		"startTime": message.SentTime,
+		"message": string(byteMessage),
 	}
 
 	pt, err := client.NewPoint("watcher.influxdb", tags, fields, time.Now())
 	if err != nil {
-		log.Fatal(err)
+		log.Error(err)
 		return err
 	}
 
@@ -88,7 +72,7 @@ func (broker *InfluxdbBroker) WriteMessage(byteMessage []byte) error {
 
 	// Write the batch
 	if err := broker.Connection.Write(bp); err != nil {
-		log.Fatal(err)
+		log.Error(err)
 		return err
 	}
 	return nil
@@ -96,21 +80,14 @@ func (broker *InfluxdbBroker) WriteMessage(byteMessage []byte) error {
 
 // ReadMessage query InfluxDB for latest measurement
 func (broker *InfluxdbBroker) ReadMessage(timeout time.Duration) (*[]byte, error) {
-	cmd := fmt.Sprintf("SELECT last(startTime), last(uuid) FROM \"%s\"", "watcher.influxdb")
+	cmd := "SELECT last(message) FROM \"watcher.influxdb\""
 	res, err := queryDB(broker, cmd)
 	if err != nil {
 		return nil, err
 	}
 
-	message := Message{
-		UUID:     res[0].Series[0].Values[0][2].(string),
-		SentTime: res[0].Series[0].Values[0][1].(string),
-	}
-	bytes, err := json.Marshal(message)
-	if err != nil {
-		panic("json encoding failed")
-	}
-	return &bytes, nil
+	message := []byte(res[0].Series[0].Values[0][1].(string))
+	return &message, nil
 }
 
 // queryDB convenience function to query the database
@@ -160,12 +137,22 @@ func main() {
 		http.Handle("/metrics", promhttp.Handler())
 		log.Fatal(http.ListenAndServe(prometheusEndpoint, nil))
 	}()
+	log.Infof("Serving metrics on %s/metrics", prometheusEndpoint)
 
-	var connection client.Client
-	connection, err = startConnect(influxdbAddress, username, password)
+	connection, err := startConnect(influxdbAddress, username, password)
 	if err != nil {
-		log.Fatalf("Starting connection to InfluxDB failed: %s", err)
+		log.Fatalf("Failed to set up client")
 	}
+	for {
+		_, _, err := connection.Ping(time.Duration(15) * time.Second)
+		if err != nil {
+			log.Infof("Connecting to InfluxDB failed: %s", err)
+			time.Sleep(time.Duration(10) * time.Second)
+		} else {
+			break
+		}
+	}
+	log.Infof("Successfully connected to InfluxDB")
 	influxdbBroker.Connection = connection
 	watcher.Start()
 
@@ -183,23 +170,20 @@ func main() {
 		log.Fatalf("Caught signal %v: terminating", sig)
 	}()
 
-	log.Infof("Serving metrics on %s/metrics", prometheusEndpoint)
 	wg.Wait()
 }
 
 func startConnect(influxdbAddress string, username string, password string) (client.Client, error) {
-	var c client.Client
-	var err error
-	for c == nil {
-		c, err = client.NewHTTPClient(client.HTTPConfig{
-			Addr:     influxdbAddress,
-			Username: username,
-			Password: password,
-		})
-		if err != nil {
-			log.Infof("Connecting to InfluxDB failed: %s", err)
-			time.Sleep(time.Duration(10) * time.Second)
-		}
+	c, err := client.NewHTTPClient(client.HTTPConfig{
+		Addr:     influxdbAddress,
+		Username: username,
+		Password: password,
+	})
+	if err != nil {
+		return nil, err
 	}
+
+	log.Infof("Started connection to InfluxDB at %s", influxdbAddress)
+
 	return c, nil
 }

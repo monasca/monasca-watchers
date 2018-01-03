@@ -63,7 +63,7 @@ Several parameters can be specified using environment variables:
 
 | Variable              | Default                  | Description                               |
 |-----------------------|--------------------------|-------------------------------------------|
-| `INFLUXDB_ADDRESS`    | `http://influxdb:8086`  | Address of the InfluxDB service           |
+| `INFLUXDB_ADDRESS`    | `http://localhost:8086`  | Address of the InfluxDB service           |
 | `INFLUXDB_USERNAME`   |`influxdb_watcher`        | InfluxDB username                         |
 | `INFLUXDB_PASSWORD`   |`password`                | InfluxDB password                         |
 | `PROMETHEUS_ENDPOINT` | `0.0.0.0:8080`           | Endpoint for Prometheus metrics           |
