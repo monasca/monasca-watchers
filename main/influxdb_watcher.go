@@ -15,6 +15,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -33,6 +34,7 @@ type watcherConfiguration struct {
 	InfluxdbAddress    string `env:"INFLUXDB_ADDRESS" envDefault:"http://localhost:8086"`
 	Username           string `env:"INFLUXDB_USERNAME" envDefault:"influxdb_watcher"`
 	Password           string `env:"INFLUXDB_PASSWORD" envDefault:"password"`
+	InfluxdbDatabase   string `env:"INFLUXDB_DATABASE" envDefault:"mon"`
 	PrometheusEndpoint string `env:"PROMETHEUS_ENDPOINT" envDefault:"0.0.0.0:8080"`
 	Period             int64  `env:"WATCHER_PERIOD" envDefault:"600"`
 	Timeout            int64  `env:"WATCHER_TIMEOUT" envDefault:"60"`
@@ -52,16 +54,18 @@ func (broker *InfluxdbBroker) WriteMessage(byteMessage []byte) error {
 		Precision: "s",
 	})
 	if err != nil {
-		log.Fatal(err)
+		log.Error(err)
 		return err
 	}
 
 	// Create a point and add to batch
-	tags := map[string]string{"watcher": "influxdb"}
+	timestamp = time.Now().UTC().Format(time.RFC3339Nano)
 	fields := map[string]interface{}{
-		"message": string(byteMessage),
+		"message":   string(byteMessage),
+		"timestamp": timestamp,
 	}
 
+	tags := map[string]string{"watcher": "influxdb"}
 	pt, err := client.NewPoint("watcher.influxdb", tags, fields, time.Now())
 	if err != nil {
 		log.Error(err)
@@ -71,7 +75,8 @@ func (broker *InfluxdbBroker) WriteMessage(byteMessage []byte) error {
 	bp.AddPoint(pt)
 
 	// Write the batch
-	if err := broker.Connection.Write(bp); err != nil {
+	err = broker.Connection.Write(bp)
+	if err != nil {
 		log.Error(err)
 		return err
 	}
@@ -80,30 +85,38 @@ func (broker *InfluxdbBroker) WriteMessage(byteMessage []byte) error {
 
 // ReadMessage query InfluxDB for latest measurement
 func (broker *InfluxdbBroker) ReadMessage(timeout time.Duration) (*[]byte, error) {
-	cmd := "SELECT last(message) FROM \"watcher.influxdb\""
-	res, err := queryDB(broker, cmd)
-	if err != nil {
-		return nil, err
+	cmd := "SELECT last(message) las(timestamp) FROM \"watcher.influxdb\""
+	ch := make(chan []client.Result)
+	cherr := make(chan error)
+	queryDB(broker, cmd, ch, cherr)
+	for {
+		select {
+		case response := <-ch:
+			timestamp = response[0].Series[0].Values[0][2].(string)
+			message := []byte(response[0].Series[0].Values[0][1].(string))
+			return &message, nil
+		case err := <-cherr:
+			return nil, err
+		case <-time.After(timeout):
+			return nil, fmt.Errorf("Read timeout %d exceeded", timeout)
+		}
 	}
-
-	message := []byte(res[0].Series[0].Values[0][1].(string))
-	return &message, nil
 }
 
 // queryDB convenience function to query the database
-func queryDB(broker *InfluxdbBroker, cmd string) (res []client.Result, err error) {
+func queryDB(broker *InfluxdbBroker, cmd string, ch chan []client.Result, cherr chan error) {
 	q := client.Query{
 		Command:  cmd,
 		Database: broker.MonascaDB,
 	}
 	response, err := broker.Connection.Query(q)
 	if err != nil {
-		return nil, err
+		cherr <- err
 	}
 	if response.Error() != nil {
-		return nil, response.Error()
+		cherr <- response.Error()
 	}
-	return response.Results, nil
+	ch <- response.Results
 }
 
 func main() {
@@ -115,6 +128,8 @@ func main() {
 
 	influxdbAddress := configuration.InfluxdbAddress
 	watcher.ValidateConfString("INFLUXDB_ADDRESS", influxdbAddress)
+	influxdbDatabase := configuration.InfluxdbDatabase
+	watcher.ValidateConfString("INFLUXDB_DATABASE", influxdbDatabase)
 	username := configuration.Username
 	watcher.ValidateConfString("INFLUXDB_USERNAME", username)
 	password := configuration.Password
@@ -124,7 +139,7 @@ func main() {
 
 	log.Infof("Using InfluxDB Address %s", influxdbAddress)
 
-	influxdbBroker := InfluxdbBroker{MonascaDB: "mon"}
+	influxdbBroker := InfluxdbBroker{MonascaDB: influxdbDatabase}
 	period := time.Duration(configuration.Period) * time.Second
 	timeout := time.Duration(configuration.Timeout) * time.Second
 

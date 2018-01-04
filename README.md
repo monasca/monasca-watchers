@@ -114,8 +114,9 @@ Several parameters can be specified using environment variables:
 
 ## Install (using Docker)
 
-See github.com/monasca/monasca-docker/tree/master/kafka-watcher and github.com/monasca/monasca-docker/tree/master/zookeeper-watcher and
-github.com/monasca/monasca-docker/tree/master/influxdb-watcher
+* github.com/monasca/monasca-docker/tree/master/kafka-watcher
+* github.com/monasca/monasca-docker/tree/master/zookeeper-watcher
+* github.com/monasca/monasca-docker/tree/master/influxdb-watcher
 
 ## License
 
@@ -124,6 +125,3 @@ Licensed under the Apache License, Version 2.0 (the "License"); you may not use 
     http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-
-
-
