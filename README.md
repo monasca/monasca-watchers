@@ -85,7 +85,7 @@ NOTE: the InfluxDB username must have read/write privileges to the Influxdb data
 | `kafka_min_round_trip_time`   | `gauge`   | Minimum Round Trip Time in seconds                |
 | `kafka_read_failure_count`    | `counter` | Number of failures reading messages               |
 | `kafka_running_average_round_trip_time` | `gauge` | Running Average Round Trip Time in seconds for last 5 messages |
-| `kafka_watcher_status`        | `gauge`   | Status of watcher: -1 = NOT_STARTED, 0 = OK, 1 = WARNING, 2 = ERROR |
+| `kafka_watcher_status`        | `gauge`   | Watcher's Kafka status: -1 = NOT_STARTED, 0 = OK, 1 = WARNING, 2 = ERROR |
 | `kafka_write_failure_count`   | `counter` | Number of failures writing messages               |
 
 
@@ -99,7 +99,7 @@ NOTE: the InfluxDB username must have read/write privileges to the Influxdb data
 | `zookeeper_min_round_trip_time`   | `gauge`   | Minimum Round Trip Time in seconds                |
 | `zookeeper_read_failure_count`    | `counter` | Number of failures reading messages               |
 | `zookeeper_running_average_round_trip_time` | `gauge` | Running Average Round Trip Time in seconds for last 5 messages |
-| `zookeeper_watcher_status`        | `gauge`   | Status of watcher: -1 = NOT_STARTED, 0 = OK, 1 = WARNING, 2 = ERROR |
+| `zookeeper_watcher_status`        | `gauge`   | Watcher's Zookeeper status: -1 = NOT_STARTED, 0 = OK, 1 = WARNING, 2 = ERROR |
 | `zookeeper_write_failure_count`   | `counter` | Number of failures writing messages               |
 
 ### InfluxDB Watcher
@@ -112,7 +112,7 @@ NOTE: the InfluxDB username must have read/write privileges to the Influxdb data
 | `influxdb_min_round_trip_time`   | `gauge`   | Minimum Round Trip Time in seconds                |
 | `influxdb_read_failure_count`    | `counter` | Number of failures reading messages               |
 | `influxdb_running_average_round_trip_time` | `gauge` | Running Average Round Trip Time in seconds for last 5 messages |
-| `influxdb_watcher_status`        | `gauge`   | Status of watcher: -1 = NOT_STARTED, 0 = OK, 1 = WARNING, 2 = ERROR |
+| `influxdb_watcher_status`        | `gauge`   | Watcher's InfluxDB status: -1 = NOT_STARTED, 0 = OK, 1 = WARNING, 2 = ERROR |
 | `influxdb_write_failure_count`   | `counter` | Number of failures writing messages               |
 
 ## Install (using Docker)

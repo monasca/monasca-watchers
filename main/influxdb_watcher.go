@@ -92,7 +92,7 @@ func (broker *InfluxdbBroker) ReadMessage(timeout time.Duration) (*[]byte, error
 	cmd := "SELECT \"message\",\"timestamp\" FROM \"watcher.influxdb\" limit 3"
 	ch := make(chan []client.Result)
 	cherr := make(chan error)
-	queryDB(broker, cmd, ch, cherr)
+	go queryDB(broker, cmd, ch, cherr)
 	for {
 		select {
 		case response := <-ch:
@@ -127,9 +127,11 @@ func queryDB(broker *InfluxdbBroker, cmd string, ch chan []client.Result, cherr 
 	response, err := broker.Connection.Query(q)
 	if err != nil {
 		cherr <- err
+		return
 	}
 	if response.Error() != nil {
 		cherr <- response.Error()
+		return
 	}
 	ch <- response.Results
 }
