@@ -1,4 +1,4 @@
-// Copyright 2017 Hewlett Packard Enterprise Development LP
+// Copyright 2017-2018 Hewlett Packard Enterprise Development LP
 //
 //    Licensed under the Apache License, Version 2.0 (the "License"); you may
 //    not use this file except in compliance with the License. You may obtain
@@ -17,9 +17,10 @@ package watcher
 import (
 	"encoding/json"
 	"fmt"
+	"time"
+
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
-	"time"
 )
 
 // Status of the Watchable
@@ -204,6 +205,7 @@ func (watcher *Watcher) watch() {
 				watcher.Status = WARNING
 			}
 			watcher.WriteFailures++
+			watcher.WriteFailuresMetric.Inc()
 			consecutiveWriteFailures++
 		}
 		watcher.StatusMetric.Set(float64(watcher.Status))
@@ -304,4 +306,11 @@ func (watcher *Watcher) Stop() bool {
 	watcher.stopNow = true
 	watcher.stopChannel <- true
 	return waitForBool(watcher.stoppedChannel, time.Second)
+}
+
+// ValidateConfString check for empty string
+func ValidateConfString(name, value string) {
+	if len(value) == 0 {
+		log.Fatalf("Invalid %s, must not be empty", name)
+	}
 }

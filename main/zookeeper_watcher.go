@@ -1,4 +1,4 @@
-// Copyright 2017 Hewlett Packard Enterprise Development LP
+// Copyright 2017-2018 Hewlett Packard Enterprise Development LP
 //
 //    Licensed under the Apache License, Version 2.0 (the "License"); you may
 //    not use this file except in compliance with the License. You may obtain
@@ -16,11 +16,6 @@ package main
 
 import (
 	"fmt"
-	configEnv "github.com/caarlos0/env"
-	"github.com/monasca/monasca-watchers/watcher"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/samuel/go-zookeeper/zk"
-	log "github.com/sirupsen/logrus"
 	"net/http"
 	"os"
 	"os/signal"
@@ -29,6 +24,12 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	configEnv "github.com/caarlos0/env"
+	"github.com/monasca/monasca-watchers/watcher"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/samuel/go-zookeeper/zk"
+	log "github.com/sirupsen/logrus"
 )
 
 type watcherConfiguration struct {
@@ -121,14 +122,14 @@ func main() {
 	}
 
 	healthCheckPath := configuration.HealthCheckPath
-	validateConfigurationString("HEALTH_CHECK_PATH", healthCheckPath)
+	watcher.ValidateConfString("HEALTH_CHECK_PATH", healthCheckPath)
 	if !strings.HasPrefix(healthCheckPath, "/") {
 		healthCheckPath = "/" + healthCheckPath
 	}
 	zookeeperServers := configuration.ZookeeperServers
-	validateConfigurationString("ZOOKEEPER_SERVERS", zookeeperServers)
+	watcher.ValidateConfString("ZOOKEEPER_SERVERS", zookeeperServers)
 	prometheusEndpoint := configuration.PrometheusEndpoint
-	validateConfigurationString("PROMETHEUS_ENDPOINT", prometheusEndpoint)
+	watcher.ValidateConfString("PROMETHEUS_ENDPOINT", prometheusEndpoint)
 
 	log.Infof("Using Zookeeper path %s with ZookeeperServers %s", healthCheckPath, zookeeperServers)
 
@@ -199,12 +200,6 @@ func startConnect(zookeeperServers string) (*zk.Conn, <-chan zk.Event, error) {
 
 	log.Infof("Started connecting to Zookeeper Servers %s", zookeeperServers)
 	return conn, eventChannel, nil
-}
-
-func validateConfigurationString(name, value string) {
-	if len(value) == 0 {
-		log.Fatalf("Invalid %s, must not be empty", name)
-	}
 }
 
 func logEvents(eventChannel <-chan zk.Event) {

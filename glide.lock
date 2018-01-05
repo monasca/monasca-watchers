@@ -1,5 +1,5 @@
-hash: b7cb75d5c295ee58d0fbe6bb8ae05f34c098ab5edc8ecbfd2a90ebb3342c84da
-updated: 2017-11-28T14:06:36.722453576-07:00
+hash: d2bf679585232132d3566691fa5245cbdb4e04bb0c4dc37fc1419d10c191cefc
+updated: 2017-12-07T13:42:56.716805982-07:00
 imports:
 - name: github.com/beorn7/perks
   version: 4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9
@@ -15,6 +15,10 @@ imports:
   version: 4bd1920723d7b7c925de087aa32e2187708897f7
   subpackages:
   - proto
+- name: github.com/influxdata/influxdb
+  version: a0b2195d6baa7c8afdabca3f058381de4fe7884b
+  subpackages:
+  - client/v2
 - name: github.com/matttproud/golang_protobuf_extensions
   version: c12348ce28de40eed0136aa2b644d0ee0650e56c
   subpackages:
@@ -47,16 +51,16 @@ imports:
 - name: github.com/spf13/viper
   version: 4dddf7c62e16bce5807744018f5b753bfe21bbd2
 - name: golang.org/x/crypto
-  version: d172538b2cfce0c13cee31e647d0367aa8cd2486
+  version: 9477e0b78b9ac3d0b03822fd95422e2fe07627cd
   subpackages:
   - ssh/terminal
 - name: golang.org/x/sys
-  version: 8f0908ab3b2457e2e15403d3697c9ef5cb4b57a9
+  version: 062cd7e4e68206d8bab9b18396626e855c992658
   subpackages:
   - unix
 testImports:
 - name: github.com/davecgh/go-spew
-  version: 04cdfd42973bb9c8589fd6a731800cf222fde1a9
+  version: 346938d642f2ec3594ed81d874461961cd0faa76
   subpackages:
   - spew
 - name: github.com/pmezard/go-difflib
