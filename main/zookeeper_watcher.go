@@ -51,9 +51,13 @@ func (broker *ZookeeperBroker) WriteMessage(message []byte) error {
 	acl := zk.WorldACL(zk.PermAll)
 	if !broker.PathExists {
 		data, stat, err := broker.Connection.Get(broker.Path)
-		log.Infof("Read %s %s %s %s", broker.Path, data, stat, err)
-		if err != nil && err == zk.ErrNoNode {
-			_, err := broker.Connection.Create(broker.Path, nil, flags, acl)
+		log.Infof("Path Read returned %s %s %s %s", broker.Path, data, stat, err)
+		if err != nil {
+			if err != zk.ErrNoNode {
+				log.Errorf("Creating %s failed: %s", broker.Path, err)
+				return err
+			}
+			_, err = broker.Connection.Create(broker.Path, nil, flags, acl)
 			if err != nil {
 				log.Errorf("Creating %s failed: %s", broker.Path, err)
 				return err
