@@ -42,8 +42,9 @@ type watcherConfiguration struct {
 
 // InfluxdbBroker Watcher for InfluxDB
 type InfluxdbBroker struct {
-	MonascaDB  string
-	Connection client.Client
+	MonascaDB    string
+	Connection   client.Client
+	MessagesSent [3]time.Time
 }
 
 // WriteMessage Write a point to Influxdb with UUID and SentTime
@@ -59,10 +60,13 @@ func (broker *InfluxdbBroker) WriteMessage(byteMessage []byte) error {
 	}
 
 	// Create a point and add to batch
-	timestamp = time.Now().UTC().Format(time.RFC3339Nano)
+	timestamp := time.Now().UTC()
+	broker.MessagesSent[2] = broker.MessagesSent[1]
+	broker.MessagesSent[1] = broker.MessagesSent[0]
+	broker.MessagesSent[0] = timestamp
 	fields := map[string]interface{}{
 		"message":   string(byteMessage),
-		"timestamp": timestamp,
+		"timestamp": timestamp.Format(time.RFC3339Nano),
 	}
 
 	tags := map[string]string{"watcher": "influxdb"}
@@ -85,16 +89,27 @@ func (broker *InfluxdbBroker) WriteMessage(byteMessage []byte) error {
 
 // ReadMessage query InfluxDB for latest measurement
 func (broker *InfluxdbBroker) ReadMessage(timeout time.Duration) (*[]byte, error) {
-	cmd := "SELECT last(message) las(timestamp) FROM \"watcher.influxdb\""
+	cmd := "SELECT \"message\",\"timestamp\" FROM \"watcher.influxdb\" limit 3"
 	ch := make(chan []client.Result)
 	cherr := make(chan error)
 	queryDB(broker, cmd, ch, cherr)
 	for {
 		select {
 		case response := <-ch:
-			timestamp = response[0].Series[0].Values[0][2].(string)
-			message := []byte(response[0].Series[0].Values[0][1].(string))
-			return &message, nil
+			for _, series := range response[0].Series {
+				layout := "2006-01-02T15:04:05.999999999Z07:00"
+				timestamp, err := time.Parse(layout, series.Values[0][2].(string))
+				if err != nil {
+					log.Infof("Failed to parse timestamp from InfluxDB. Skipping. %s", err)
+					continue
+				}
+				for _, ts := range broker.MessagesSent {
+					if timestamp == ts {
+						message := []byte(series.Values[0][1].(string))
+						return &message, nil
+					}
+				}
+			}
 		case err := <-cherr:
 			return nil, err
 		case <-time.After(timeout):

@@ -66,9 +66,12 @@ Several parameters can be specified using environment variables:
 | `INFLUXDB_ADDRESS`    | `http://localhost:8086`  | Address of the InfluxDB service           |
 | `INFLUXDB_USERNAME`   |`influxdb_watcher`        | InfluxDB username                         |
 | `INFLUXDB_PASSWORD`   |`password`                | InfluxDB password                         |
+| `INFLUXDB_DATABASE`   | `mon`                    | InfluxDB database                         |
 | `PROMETHEUS_ENDPOINT` | `0.0.0.0:8080`           | Endpoint for Prometheus metrics           |
 | `WATCHER_PERIOD`      |`600`                     | How often to do a read/write cycle        |
 | `WATCHER_TIMEOUT`     |`60`                      | How long to wait for message read         |
+
+NOTE: the InfluxDB username must have read/write privileges to the Influxdb database
 
 ## Metrics
 
