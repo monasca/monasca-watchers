@@ -52,9 +52,13 @@ func (broker *ZookeeperBroker) WriteMessage(message []byte) error {
 	acl := zk.WorldACL(zk.PermAll)
 	if !broker.PathExists {
 		data, stat, err := broker.Connection.Get(broker.Path)
-		log.Infof("Read %s %s %s %s", broker.Path, data, stat, err)
-		if err != nil && err == zk.ErrNoNode {
-			_, err := broker.Connection.Create(broker.Path, nil, flags, acl)
+		log.Infof("Path Read returned %s %s %s %s", broker.Path, data, stat, err)
+		if err != nil {
+			if err != zk.ErrNoNode {
+				log.Errorf("Creating %s failed: %s", broker.Path, err)
+				return err
+			}
+			_, err = broker.Connection.Create(broker.Path, nil, flags, acl)
 			if err != nil {
 				log.Errorf("Creating %s failed: %s", broker.Path, err)
 				return err
@@ -154,14 +158,8 @@ func main() {
 		log.Fatalf("Starting connection to Zookeeper failed: %s", err)
 	}
 
-	for true {
-		ev := <-eventChannel
-		log.Infof("Event = %s", ev)
-		if ev.State == zk.StateConnected {
-			log.Infof("Zookeeper state is connected")
-			break
-		}
-	}
+	waitForConnected(eventChannel)
+
 	zookeeperBroker.Connection = connection
 	go logEvents(eventChannel)
 
@@ -184,6 +182,43 @@ func main() {
 
 	log.Infof("Serving metrics on %s/metrics", prometheusEndpoint)
 	wg.Wait()
+}
+
+func waitForConnected(eventChannel <-chan zk.Event) {
+	stateChannel := make(chan bool)
+	go determineState(eventChannel, stateChannel)
+	connected := false
+	for true {
+		stateChannel <- true
+		currentState := <-stateChannel
+		log.Infof("Current Connected state = %v", currentState)
+		if currentState && connected {
+			log.Infof("State is connected twice in a row, done waiting for connect")
+			close(stateChannel)
+			return
+		}
+		connected = currentState
+		time.Sleep(time.Second)
+	}
+}
+
+func determineState(eventChannel <-chan zk.Event, stateChannel chan bool) {
+	connected := false
+	for true {
+		select {
+		case ev := <-eventChannel:
+			log.Infof("Event = %s", ev)
+			connected = ev.State == zk.StateConnected || ev.State == zk.StateHasSession
+			log.Infof("Zookeeper connected state is %v", connected)
+		case _, ok := <-stateChannel:
+			if !ok {
+				// channel closed
+				log.Infof("determineState exiting")
+				return
+			}
+			stateChannel <- connected
+		}
+	}
 }
 
 // startConnect doesn't actually connect to the zookeeper server, it just

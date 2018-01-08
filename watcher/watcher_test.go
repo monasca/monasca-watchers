@@ -1,4 +1,4 @@
-// Copyright 2017 Hewlett Packard Enterprise Development LP
+// Copyright 2017-2018 Hewlett Packard Enterprise Development LP
 //
 //    Licensed under the Apache License, Version 2.0 (the "License"); you may
 //    not use this file except in compliance with the License. You may obtain
@@ -16,8 +16,8 @@ package watcher
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	log "github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
 )
@@ -100,7 +100,6 @@ func (broker *testBroker) waitForRead(timeout time.Duration) bool {
 }
 
 func TestSimple(t *testing.T) {
-	log.SetLevelString("info")
 	testBroker := createTestBroker(false, t)
 	watcher := CreateWatcher(testBroker, time.Duration(1)*time.Second, 1, twoHundredMilliseconds,
 		"TestSimple")
@@ -131,7 +130,6 @@ func testOneWriteRead(broker *testBroker, watcher *Watcher) {
 }
 
 func TestReadFailure(t *testing.T) {
-	log.SetLevelString("info")
 	testBroker := createTestBroker(false, t)
 	maxFailures := 2
 	watcher := CreateWatcher(testBroker, tenMilliseconds, maxFailures, tenMilliseconds,
@@ -164,7 +162,6 @@ func TestReadFailure(t *testing.T) {
 }
 
 func TestWriteFailure(t *testing.T) {
-	log.SetLevelString("info")
 	testBroker := createTestBroker(false, t)
 	maxFailures := 2
 	watcher := CreateWatcher(testBroker, tenMilliseconds, maxFailures, tenMilliseconds,
@@ -197,7 +194,6 @@ func TestWriteFailure(t *testing.T) {
 }
 
 func TestWriteFailureRecovery(t *testing.T) {
-	log.SetLevelString("info")
 	testBroker := createTestBroker(false, t)
 	maxFailures := 2
 	watcher := CreateWatcher(testBroker, tenMilliseconds, maxFailures, tenMilliseconds,
@@ -227,7 +223,6 @@ func TestWriteFailureRecovery(t *testing.T) {
 }
 
 func TestReadFailureRecovery(t *testing.T) {
-	log.SetLevelString("info")
 	testBroker := createTestBroker(false, t)
 	maxFailures := 2
 	watcher := CreateWatcher(testBroker, twoHundredMilliseconds, maxFailures, tenMilliseconds,
