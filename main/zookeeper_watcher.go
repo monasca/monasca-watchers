@@ -208,7 +208,7 @@ func determineState(eventChannel <-chan zk.Event, stateChannel, quitChannel chan
 		select {
 		case ev := <-eventChannel:
 			log.Infof("Event = %s", ev)
-			connected = ev.State == zk.StateConnected
+			connected = ev.State == zk.StateConnected || ev.State == zk.StateHasSession
 			log.Infof("Zookeeper connected state is %v", connected)
 		case <-stateChannel:
 			stateChannel <- connected
