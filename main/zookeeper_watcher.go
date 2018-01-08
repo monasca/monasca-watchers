@@ -185,8 +185,7 @@ func main() {
 
 func waitForConnected(eventChannel <-chan zk.Event) {
 	stateChannel := make(chan bool)
-	quitChannel := make(chan bool)
-	go determineState(eventChannel, stateChannel, quitChannel)
+	go determineState(eventChannel, stateChannel)
 	connected := false
 	for true {
 		stateChannel <- true
@@ -194,7 +193,7 @@ func waitForConnected(eventChannel <-chan zk.Event) {
 		log.Infof("Current Connected state = %v", currentState)
 		if currentState && connected {
 			log.Infof("State is connected twice in a row, done waiting for connect")
-			quitChannel <- true
+			close(stateChannel)
 			return
 		}
 		connected = currentState
@@ -202,7 +201,7 @@ func waitForConnected(eventChannel <-chan zk.Event) {
 	}
 }
 
-func determineState(eventChannel <-chan zk.Event, stateChannel, quitChannel chan bool) {
+func determineState(eventChannel <-chan zk.Event, stateChannel chan bool) {
 	connected := false
 	for true {
 		select {
@@ -210,11 +209,13 @@ func determineState(eventChannel <-chan zk.Event, stateChannel, quitChannel chan
 			log.Infof("Event = %s", ev)
 			connected = ev.State == zk.StateConnected || ev.State == zk.StateHasSession
 			log.Infof("Zookeeper connected state is %v", connected)
-		case <-stateChannel:
+		case _, ok := <-stateChannel:
+			if !ok {
+				// channel closed
+				log.Infof("determineState exiting")
+				return
+			}
 			stateChannel <- connected
-		case <-quitChannel:
-			log.Infof("determineState exiting")
-			return
 		}
 	}
 }
