@@ -157,14 +157,8 @@ func main() {
 		log.Fatalf("Starting connection to Zookeeper failed: %s", err)
 	}
 
-	for true {
-		ev := <-eventChannel
-		log.Infof("Event = %s", ev)
-		if ev.State == zk.StateConnected {
-			log.Infof("Zookeeper state is connected")
-			break
-		}
-	}
+	waitForConnected(eventChannel)
+
 	zookeeperBroker.Connection = connection
 	go logEvents(eventChannel)
 
@@ -187,6 +181,42 @@ func main() {
 
 	log.Infof("Serving metrics on %s/metrics", prometheusEndpoint)
 	wg.Wait()
+}
+
+func waitForConnected(eventChannel <-chan zk.Event) {
+	stateChannel := make(chan bool)
+	quitChannel := make(chan bool)
+	go determineState(eventChannel, stateChannel, quitChannel)
+	connected := false
+	for true {
+		stateChannel <- true
+		currentState := <-stateChannel
+		log.Infof("Current Connected state = %v", currentState)
+		if currentState && connected {
+			log.Infof("State is connected twice in a row, done waiting for connect")
+			quitChannel <- true
+			return
+		}
+		connected = currentState
+		time.Sleep(time.Second)
+	}
+}
+
+func determineState(eventChannel <-chan zk.Event, stateChannel, quitChannel chan bool) {
+	connected := false
+	for true {
+		select {
+		case ev := <-eventChannel:
+			log.Infof("Event = %s", ev)
+			connected = ev.State == zk.StateConnected
+			log.Infof("Zookeeper connected state is %v", connected)
+		case <-stateChannel:
+			stateChannel <- connected
+		case <-quitChannel:
+			log.Infof("determineState exiting")
+			return
+		}
+	}
 }
 
 // startConnect doesn't actually connect to the zookeeper server, it just
