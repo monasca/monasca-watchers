@@ -136,6 +136,34 @@ func queryDB(broker *InfluxdbBroker, cmd string, ch chan []client.Result, cherr 
 	ch <- response.Results
 }
 
+func (broker *InfluxdbBroker) checkDatabaseExists(timeout time.Duration) bool {
+	cmd := "SHOW DATABASES"
+	ch := make(chan []client.Result)
+	cherr := make(chan error)
+	go queryDB(broker, cmd, ch, cherr)
+	for {
+		select {
+		case response := <-ch:
+			for _, s := range response[0].Series {
+				for _, db := range s.Values {
+					if db[0] == "mon" {
+						log.Infof("Database %s exists", broker.MonascaDB)
+						return true
+					}
+				}
+				log.Infof("Database %s does not exist yet", broker.MonascaDB)
+				return false
+			}
+		case _ = <-cherr:
+			log.Infof("Database %s does not exist yet", broker.MonascaDB)
+			return false
+		case <-time.After(timeout):
+			log.Infof("Database %s does not exist yet", broker.MonascaDB)
+			return false
+		}
+	}
+}
+
 func main() {
 	configuration := watcherConfiguration{}
 	err := configEnv.Parse(&configuration)
@@ -172,6 +200,7 @@ func main() {
 	log.Infof("Serving metrics on %s/metrics", prometheusEndpoint)
 
 	connection, err := startConnect(influxdbAddress, username, password)
+	influxdbBroker.Connection = connection
 	if err != nil {
 		log.Fatalf("Failed to set up client")
 	}
@@ -184,8 +213,14 @@ func main() {
 			break
 		}
 	}
+	for {
+		databaseExists := influxdbBroker.checkDatabaseExists(time.Duration(15) * time.Second)
+		if databaseExists {
+			break
+		}
+		time.Sleep(time.Duration(10) * time.Second)
+	}
 	log.Infof("Successfully connected to InfluxDB")
-	influxdbBroker.Connection = connection
 	watcher.Start()
 
 	log.Info("Started influxdb-watcher")
