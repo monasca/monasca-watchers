@@ -141,25 +141,21 @@ func (broker *InfluxdbBroker) checkDatabaseExists(timeout time.Duration) bool {
 	ch := make(chan []client.Result)
 	cherr := make(chan error)
 	go queryDB(broker, cmd, ch, cherr)
-	for {
-		select {
-		case response := <-ch:
-			for _, s := range response[0].Series {
-				for _, db := range s.Values {
-					if db[0] == broker.MonascaDB {
-						log.Infof("Database %s exists", broker.MonascaDB)
-						return true
-					}
+	select {
+	case response := <-ch:
+		for _, s := range response[0].Series {
+			for _, db := range s.Values {
+				if db[0] == broker.MonascaDB {
+					log.Infof("Database %s exists", broker.MonascaDB)
+					return true
 				}
 			}
-			log.Infof("Database %s does not exist yet", broker.MonascaDB)
-			return false
-		case _ = <-cherr:
-		case <-time.After(timeout):
-			log.Infof("Database %s does not exist yet", broker.MonascaDB)
-			return false
 		}
+	case <-time.After(timeout):
+	case _ = <-cherr:
 	}
+	log.Infof("Database %s does not exist yet", broker.MonascaDB)
+	return false
 }
 
 func main() {
