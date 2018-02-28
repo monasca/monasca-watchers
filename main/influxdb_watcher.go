@@ -89,7 +89,7 @@ func (broker *InfluxdbBroker) WriteMessage(byteMessage []byte) error {
 
 // ReadMessage query InfluxDB for latest measurement
 func (broker *InfluxdbBroker) ReadMessage(timeout time.Duration) (*[]byte, error) {
-	cmd := "SELECT \"message\",\"timestamp\" FROM \"watcher.influxdb\" limit 3"
+	cmd := "SELECT \"message\",\"timestamp\" FROM \"watcher.influxdb\" order by desc limit 3"
 	ch := make(chan []client.Result)
 	cherr := make(chan error)
 	go queryDB(broker, cmd, ch, cherr)
@@ -110,6 +110,7 @@ func (broker *InfluxdbBroker) ReadMessage(timeout time.Duration) (*[]byte, error
 					}
 				}
 			}
+			return nil, fmt.Errorf("Messages read do not match any sent recently by this watcher")
 		case err := <-cherr:
 			return nil, err
 		case <-time.After(timeout):
