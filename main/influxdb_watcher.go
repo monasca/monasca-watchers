@@ -89,32 +89,31 @@ func (broker *InfluxdbBroker) WriteMessage(byteMessage []byte) error {
 
 // ReadMessage query InfluxDB for latest measurement
 func (broker *InfluxdbBroker) ReadMessage(timeout time.Duration) (*[]byte, error) {
-	cmd := "SELECT \"message\",\"timestamp\" FROM \"watcher.influxdb\" limit 3"
+	cmd := "SELECT \"message\",\"timestamp\" FROM \"watcher.influxdb\" order by desc limit 3"
 	ch := make(chan []client.Result)
 	cherr := make(chan error)
 	go queryDB(broker, cmd, ch, cherr)
-	for {
-		select {
-		case response := <-ch:
-			for _, series := range response[0].Series {
-				layout := "2006-01-02T15:04:05.999999999Z07:00"
-				timestamp, err := time.Parse(layout, series.Values[0][2].(string))
-				if err != nil {
-					log.Infof("Failed to parse timestamp from InfluxDB. Skipping. %s", err)
-					continue
-				}
-				for _, ts := range broker.MessagesSent {
-					if timestamp == ts {
-						message := []byte(series.Values[0][1].(string))
-						return &message, nil
-					}
+	select {
+	case response := <-ch:
+		for _, series := range response[0].Series {
+			layout := "2006-01-02T15:04:05.999999999Z07:00"
+			timestamp, err := time.Parse(layout, series.Values[0][2].(string))
+			if err != nil {
+				log.Infof("Failed to parse timestamp from InfluxDB. Skipping. %s", err)
+				continue
+			}
+			for _, ts := range broker.MessagesSent {
+				if timestamp == ts {
+					message := []byte(series.Values[0][1].(string))
+					return &message, nil
 				}
 			}
-		case err := <-cherr:
-			return nil, err
-		case <-time.After(timeout):
-			return nil, fmt.Errorf("Read timeout %d exceeded", timeout)
 		}
+		return nil, fmt.Errorf("Messages read do not match any sent recently by this watcher")
+	case err := <-cherr:
+		return nil, err
+	case <-time.After(timeout):
+		return nil, fmt.Errorf("Read timeout %d exceeded", timeout)
 	}
 }
 
